@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>论文自动生成工具</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", sans-serif; background: #f5f5f7; color: #1d1d1f; min-height: 100vh; }
+.container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+h1 { font-size: 28px; font-weight: 600; margin-bottom: 8px; }
+.subtitle { color: #86868b; margin-bottom: 40px; }
+
+.card { background: #fff; border-radius: 16px; padding: 32px; margin-bottom: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.card h2 { font-size: 18px; margin-bottom: 16px; }
+
+.upload-zone { border: 2px dashed #d2d2d7; border-radius: 12px; padding: 48px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.upload-zone:hover, .upload-zone.dragover { border-color: #0071e3; background: #f0f7ff; }
+.upload-zone p { color: #86868b; margin-top: 8px; }
+.file-list { margin-top: 16px; font-size: 13px; color: #515154; }
+.file-list span { display: inline-block; background: #f5f5f7; padding: 4px 10px; border-radius: 6px; margin: 4px; }
+
+.form-row { display: flex; gap: 16px; margin-bottom: 16px; }
+.form-row label { flex: 1; }
+.form-row label span { display: block; font-size: 13px; color: #86868b; margin-bottom: 6px; }
+.form-row input, .form-row select { width: 100%; padding: 10px 14px; border: 1px solid #d2d2d7; border-radius: 8px; font-size: 14px; }
+
+.btn { display: inline-block; padding: 14px 32px; background: #0071e3; color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.btn:hover { background: #0077ed; }
+.btn:disabled { background: #d2d2d7; cursor: not-allowed; }
+.btn-download { background: #34c759; }
+.btn-download:hover { background: #30b350; }
+
+.progress-section { display: none; }
+.stage { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f5f5f7; }
+.stage-dot { width: 10px; height: 10px; border-radius: 50%; background: #d2d2d7; margin-right: 12px; flex-shrink: 0; }
+.stage-dot.active { background: #0071e3; animation: pulse 1s infinite; }
+.stage-dot.done { background: #34c759; }
+.stage-name { flex: 1; font-size: 14px; }
+.stage-status { font-size: 12px; color: #86868b; }
+
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.preview-box { margin-top: 16px; background: #fafafa; border-radius: 8px; padding: 16px; max-height: 300px; overflow-y: auto; font-size: 13px; line-height: 1.8; white-space: pre-wrap; display: none; }
+
+.download-section { display: none; text-align: center; padding: 32px; }
+.download-section p { margin-bottom: 16px; color: #515154; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>论文自动生成工具</h1>
+  <p class="subtitle">上传开题报告和数据文件，自动生成完整论文初稿</p>
+
+  <div class="card">
+    <h2>1. 上传文件</h2>
+    <div class="upload-zone" id="dropZone" onclick="fileInput.click()">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#86868b" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <p>拖拽文件到这里，或点击选择文件</p>
+      <p style="font-size:12px">支持 .docx .pdf .xlsx .csv .txt</p>
+    </div>
+    <input type="file" id="fileInput" multiple style="display:none" accept=".docx,.pdf,.xlsx,.xls,.csv,.txt,.md">
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. 论文信息</h2>
+    <div class="form-row">
+      <label><span>论文标题</span><input type="text" id="title" placeholder="请输入论文标题"></label>
+    </div>
+    <div class="form-row">
+      <label><span>学科方向</span><input type="text" id="subject" placeholder="如：教育学、管理学、心理学"></label>
+      <label><span>学位层次</span>
+        <select id="degree"><option>本科</option><option>硕士</option><option>博士</option></select>
+      </label>
+    </div>
+    <div class="form-row">
+      <label><span>作者姓名</span><input type="text" id="author" placeholder="选填"></label>
+      <label><span>学校名称</span><input type="text" id="school" placeholder="选填"></label>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin: 24px 0;">
+    <button class="btn" id="generateBtn" onclick="startGenerate()">开始生成论文</button>
+  </div>
+
+  <div class="card progress-section" id="progressSection">
+    <h2>3. 生成进度</h2>
+    <div id="stages">
+      <div class="stage" data-stage="parsing"><div class="stage-dot"></div><div class="stage-name">解析文件</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="analyzing"><div class="stage-dot"></div><div class="stage-name">数据分析</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="outline"><div class="stage-dot"></div><div class="stage-name">生成大纲</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="literature"><div class="stage-dot"></div><div class="stage-name">撰写文献综述</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="methodology"><div class="stage-dot"></div><div class="stage-name">撰写研究方法</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="results"><div class="stage-dot"></div><div class="stage-name">撰写数据分析与结果</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="conclusion"><div class="stage-dot"></div><div class="stage-name">撰写结论与摘要</div><div class="stage-status"></div></div>
+      <div class="stage" data-stage="docx"><div class="stage-dot"></div><div class="stage-name">组装 Word 文档</div><div class="stage-status"></div></div>
+    </div>
+    <div class="preview-box" id="preview"></div>
+  </div>
+
+  <div class="card download-section" id="downloadSection">
+    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <p>论文生成完成！</p>
+    <a id="downloadLink" class="btn btn-download" href="#" download>下载 Word 文档</a>
+  </div>
+</div>
+
+<script>
+let uploadedFiles = [];
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function handleFiles(files) {
+  uploadedFiles = Array.from(files);
+  const list = document.getElementById('fileList');
+  list.innerHTML = uploadedFiles.map(f => `<span>${f.name} (${(f.size/1024).toFixed(0)}KB)</span>`).join('');
+}
+
+async function startGenerate() {
+  if (!uploadedFiles.length) { alert('请先上传文件'); return; }
+  const title = document.getElementById('title').value || '毕业论文';
+
+  const formData = new FormData();
+  uploadedFiles.forEach(f => formData.append('files', f));
+  formData.append('title', title);
+  formData.append('subject', document.getElementById('subject').value);
+  formData.append('degree', document.getElementById('degree').value);
+  formData.append('author', document.getElementById('author').value);
+  formData.append('school', document.getElementById('school').value);
+
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('downloadSection').style.display = 'none';
+
+  try {
+    const resp = await fetch('/api/generate', { method: 'POST', body: formData });
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            updateProgress(data);
+          } catch(e) {}
+        }
+      }
+    }
+  } catch(e) {
+    alert('生成出错: ' + e.message);
+  }
+  document.getElementById('generateBtn').disabled = false;
+}
+
+function updateProgress(data) {
+  const stages = document.querySelectorAll('.stage');
+  stages.forEach(s => {
+    const dot = s.querySelector('.stage-dot');
+    const status = s.querySelector('.stage-status');
+    if (s.dataset.stage === data.stage) {
+      dot.className = 'stage-dot ' + (data.status === 'done' ? 'done' : 'active');
+      status.textContent = data.status === 'done' ? '完成' : '生成中...';
+    }
+  });
+
+  if (data.preview) {
+    const preview = document.getElementById('preview');
+    preview.style.display = 'block';
+    preview.textContent = data.preview;
+    preview.scrollTop = preview.scrollHeight;
+  }
+
+  if (data.download_url) {
+    document.getElementById('downloadSection').style.display = 'block';
+    const link = document.getElementById('downloadLink');
+    link.href = data.download_url;
+    link.textContent = '下载 Word 文档';
+  }
+}
+</script>
+</body>
+</html>
