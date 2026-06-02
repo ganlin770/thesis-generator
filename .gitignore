@@ -1,5 +1,108 @@
+# Python
 __pycache__/
-uploads/
-output/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Environment variables & Secrets
 .env
+.env.local
+.env.*.local
+.env.example  # 注：例子文件可保留，但实际密钥文件需忽略
+config/.env
+config/secrets.json
+secrets.yaml
+
+# Application-specific
+uploads/                 # 临时上传文件夹（生成后自动删除）
+output/                  # 生成的论文和图表（生成产物，可重新生成）
+output/charts/           # 分析图表（生成产物）
+*.docx                   # 生成的 Word 文件（可选：保留用于版本控制）
+*.pdf                    # 临时生成的 PDF（可选）
+temp/
+tmp/
+
+# Dependency lock files（可选：取决于你的包管理偏好）
+Pipfile.lock
+poetry.lock
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+
+# Logs
+logs/
+*.log
+
+# Zeabur deployment
+.zeabur/
+zeabur-*.txt
+
+# Node.js（如后续添加 npm 依赖）
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Distribution / packaging（构建文件）
+build/
+dist/
+*.tar.gz
+
+# 其他
+.git/
+.github/
+.gitignore
